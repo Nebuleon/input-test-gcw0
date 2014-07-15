@@ -1,0 +1,11 @@
+[Desktop Entry]
+
+Name=KB input 1.2
+Comment=Tests keyboard emulation input using SDL 1.2
+Exec=input-test-sdl-1.2
+X-OD-NeedsJoystick=false
+X-OD-NeedsGSensor=true
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=applications;

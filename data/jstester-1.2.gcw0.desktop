@@ -1,0 +1,11 @@
+[Desktop Entry]
+
+Name=JS input 1.2
+Comment=Tests joystick-based input using SDL 1.2
+Exec=input-test-sdl-1.2
+X-OD-NeedsJoystick=true
+X-OD-NeedsGSensor=true
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=applications;

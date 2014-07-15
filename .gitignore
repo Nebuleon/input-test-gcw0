@@ -1,0 +1,5 @@
+*.o
+input-test
+input-test-sdl-1.2
+input-sdl-2
+.opk_data/
