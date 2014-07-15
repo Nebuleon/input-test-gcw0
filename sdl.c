@@ -614,7 +614,11 @@ int main(int argc, char** argv)
 				case SDL_KEYUP:
 					for (i = 0; i < sizeof(KeysHavingElements) / sizeof(KeysHavingElements[0]); i++)
 					{
+#ifdef SDL_1
 						if (Event.key.keysym.sym == KeysHavingElements[i])
+#else
+						if (Event.key.keysym.scancode == KeysHavingElements[i])
+#endif
 						{
 							i = KeysToElements[i];
 							if (ElementPressed[i] && Event.type == SDL_KEYDOWN)
