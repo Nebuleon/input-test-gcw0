@@ -343,7 +343,12 @@ static void RENDER_RASTER(SDL_RASTER_TYPE Raster, SDL_Rect* DestRect)
 #endif
 }
 
-static void DrawJoystickDot(const Sint16 JoystickX, const Sint16 JoystickY, const Sint16 CX, const Sint16 Y, SDL_RASTER_TYPE Text, const SDL_Color* Color)
+// The return value of this function is the raster containing the coordinates
+// shown for the joystick, if any.
+// The caller is required to free this raster after it calls PRESENT(),
+// because the renderer may defer drawing it until presentation occurs
+// and another texture may be allocated on top if it is freed straight away.
+static SDL_RASTER_TYPE DrawJoystickDot(const Sint16 JoystickX, const Sint16 JoystickY, const Sint16 CX, const Sint16 Y, SDL_RASTER_TYPE Text, const SDL_Color* Color)
 {
 	if (JoystickX != 0 || JoystickY != 0)
 	{
@@ -373,8 +378,9 @@ static void DrawJoystickDot(const Sint16 JoystickX, const Sint16 JoystickY, cons
 		else
 			CoordsRect.y -= HEIGHT(TextCoords) + 2;
 		RENDER_RASTER(TextCoords, &CoordsRect);
-		FREE_RASTER(TextCoords);
+		return TextCoords;
 	}
+	else return NULL;
 }
 
 /* - - - DISPLAY AND INPUT - - - */
@@ -439,12 +445,18 @@ static void DrawScreen()
 
 	// A dot to indicate where the analog nub is pointed to, relative to the
 	// inner screen, as well as its coordinates
-	DrawJoystickDot(BuiltInJS_X, BuiltInJS_Y, TEXT_ANALOG_CX, TEXT_ANALOG_Y, TextAnalog, &ColorAnalog);
+	SDL_RASTER_TYPE BuiltInJSCoords = DrawJoystickDot(BuiltInJS_X, BuiltInJS_Y, TEXT_ANALOG_CX, TEXT_ANALOG_Y, TextAnalog, &ColorAnalog);
 
 	// And another for the gravity sensor
-	DrawJoystickDot(GSensorJS_X, GSensorJS_Y, TEXT_GRAVITY_CX, TEXT_GRAVITY_Y, TextGravity, &ColorGravity);
+	SDL_RASTER_TYPE GSensorJSCoords = DrawJoystickDot(GSensorJS_X, GSensorJS_Y, TEXT_GRAVITY_CX, TEXT_GRAVITY_Y, TextGravity, &ColorGravity);
 
 	PRESENT();
+
+	if (BuiltInJSCoords)
+		FREE_RASTER(BuiltInJSCoords);
+	if (GSensorJSCoords)
+		FREE_RASTER(GSensorJSCoords);
+
 	SDL_Delay(8); // Reduce the delay between this update and the input for the next
 }
 
