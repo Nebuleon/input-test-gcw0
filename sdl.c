@@ -395,6 +395,19 @@ static void DrawScreen()
 	// the bezel)
 	RENDER_HOLLOW_RECT(&ScreenRect, &ColorBorder);
 
+	// Left and right are red and green, to help debug a possible problem with
+	// end of line/start of line transfers bleeding
+	{
+		SDL_Rect LeftRect = { .x = 0, .y = 0, .w = 1, .h = SCREEN_HEIGHT };
+		SDL_Color LeftColor = { 255,   0,   0, 255 };
+		RENDER_FILLED_RECT(&LeftRect, &LeftColor);
+	}
+	{
+		SDL_Rect RightRect = { .x = SCREEN_WIDTH - 1, .y = 0, .w = 1, .h = SCREEN_HEIGHT };
+		SDL_Color RightColor = {   0, 255,   0, 255 };
+		RENDER_FILLED_RECT(&RightRect, &RightColor);
+	}
+
 	// Elements
 	unsigned int i;
 	for (i = 0; i < ELEMENT_COUNT; i++)
