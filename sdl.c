@@ -163,6 +163,9 @@ struct DrawnElement {
 SDL_SCREEN_TYPE Screen;
 #ifndef SDL_1
 SDL_Renderer* Renderer;
+SDL_Haptic* HapticDevice;
+bool HapticActive = false;
+SDL_RASTER_TYPE TextRumble;
 #endif
 
 SDL_RASTER_TYPE TextCross;
@@ -207,17 +210,20 @@ TTF_Font* Font = NULL;
 #define TEXT_FACE_Y       20
 
 #define TEXT_CROSS_ERR_LX  4
-#define TEXT_CROSS_ERR_Y 204
+#define TEXT_CROSS_ERR_Y 188
 
 #define TEXT_EXIT_RX     316
 #define TEXT_EXIT_Y      220
+
+#define TEXT_RUMBLE_RX   316
+#define TEXT_RUMBLE_Y    204
 
                                    //  R    G    B    A
 const SDL_Color ColorBackground   = {   0,   0,   0, 255 };
 const SDL_Color ColorBorder       = { 255, 255, 255, 255 };
 const SDL_Color ColorInnerBorder  = { 128, 128, 128, 255 };
 const SDL_Color ColorError        = { 255,  32,  32, 255 };
-const SDL_Color ColorExit         = { 255, 255, 255, 255 };
+const SDL_Color ColorPrompt       = { 255, 255, 255, 255 };
 const SDL_Color ColorNeverPressed = {  32,  32,  32, 255 };
 
 const SDL_Color ColorCross        = { 255, 255,  32, 255 };
@@ -256,6 +262,32 @@ bool MustExit(void)
 	// Start+Select allows exiting this application.
 	return ElementPressed[ELEMENT_SELECT] && ElementPressed[ELEMENT_START];
 }
+
+#ifndef SDL_1
+void UpdateHaptic(void)
+{
+	bool NewHapticActive = ElementPressed[ELEMENT_L] && ElementPressed[ELEMENT_R];
+
+	if (!HapticActive && NewHapticActive)
+	{
+		printf("Starting force feedback as requested by the user\n");
+		if (SDL_HapticRumblePlay(HapticDevice, 0.33f /* Strength */, 15000 /* Time */) < 0)
+		{
+			printf("SDL_HapticRumblePlay failed: %s\n", SDL_GetError());
+		}
+	}
+	else if (HapticActive && !NewHapticActive)
+	{
+		printf("Stopping force feedback as requested by the user\n");
+		if (SDL_HapticRumbleStop(HapticDevice) < 0)
+		{
+			printf("SDL_HapticRumbleStop failed: %s\n", SDL_GetError());
+		}
+	}
+
+	HapticActive = NewHapticActive;
+}
+#endif
 
 static int WIDTH(SDL_RASTER_TYPE Raster)
 {
@@ -408,6 +440,15 @@ static void DrawScreen()
 	SDL_Rect TextExitRect = { .x = TEXT_EXIT_RX - WIDTH(TextExit), .y = TEXT_EXIT_Y, .w = WIDTH(TextExit), .h = HEIGHT(TextExit) };
 	RENDER_RASTER(TextExit, &TextExitRect);
 
+#ifndef SDL_1
+	// Text prompt: L+R to rumble
+	if (HapticDevice != NULL)
+	{
+		SDL_Rect TextRumbleRect = { .x = TEXT_RUMBLE_RX - WIDTH(TextRumble), .y = TEXT_RUMBLE_Y, .w = WIDTH(TextRumble), .h = HEIGHT(TextRumble) };
+		RENDER_RASTER(TextRumble, &TextRumbleRect);
+	}
+#endif
+
 	// Text prompt, if a direction is pressed on the cross
 	if (ElementPressed[0] || ElementPressed[1] || ElementPressed[2] || ElementPressed[3])
 	{
@@ -545,8 +586,41 @@ int main(int argc, char** argv)
 
 	Text = TTF_RenderUTF8_Blended(Font, "Opposite directions pressed simultaneously on the cross", ColorError);
 	TextCrossError = MAKE_RASTER(Text);
-	Text = TTF_RenderUTF8_Blended(Font, "Start+Select to exit", ColorExit);
+	Text = TTF_RenderUTF8_Blended(Font, "Start+Select to exit", ColorPrompt);
 	TextExit = MAKE_RASTER(Text);
+
+#ifndef SDL_1
+	if (SDL_InitSubSystem(SDL_INIT_HAPTIC) < 0)
+	{
+		printf("SDL force feedback initialisation failed (non-fatal): %s\n", SDL_GetError());
+	}
+
+	for (i = 0; i < SDL_NumHaptics(); i++)
+	{
+		printf("Force feedback device %u: \"%s\"\n", i, SDL_HapticName(i));
+	}
+
+	if (SDL_NumHaptics() > 0)
+	{
+		HapticDevice = SDL_HapticOpen(0);
+		if (HapticDevice == NULL)
+		{
+			printf("SDL_HapticOpen(0) failed (non-fatal): %s\n", SDL_GetError());
+		}
+		else if (SDL_HapticRumbleInit(HapticDevice) != 0)
+		{
+			printf("SDL_HapticRumbleInit failed (non-fatal): %s\n", SDL_GetError());
+			SDL_HapticClose(HapticDevice);
+			HapticDevice = NULL;
+		}
+	}
+
+	if (HapticDevice != NULL)
+	{
+		Text = TTF_RenderUTF8_Blended(Font, "L+R to rumble", ColorPrompt);
+		TextRumble = MAKE_RASTER(Text);
+	}
+#endif
 
 #ifdef SDL_1
 	// Make sure we don't get key repeating.
@@ -651,7 +725,15 @@ int main(int argc, char** argv)
 
 		DrawScreen();
 		Exit |= MustExit();
+#ifndef SDL_1
+		UpdateHaptic();
+#endif
 	} // while (!Exit)
+
+#ifndef SDL_1
+	if (HapticDevice != NULL)
+		SDL_HapticClose(HapticDevice);
+#endif
 
 	if (BuiltInJS != NULL)
 		SDL_JoystickClose(BuiltInJS);
