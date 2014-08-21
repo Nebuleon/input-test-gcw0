@@ -388,8 +388,8 @@ static SDL_RASTER_TYPE DrawJoystickDot(const Sint16 JoystickX, const Sint16 Joys
 		RENDER_RASTER(Text, &TextRect);
 
 		SDL_Rect DotRect = {
-			.x = INNER_SCREEN_X + (Uint32) (JoystickX + 32767) * (INNER_SCREEN_W - 4) / 65536,
-			.y = GCW_ZERO_PIC_Y + INNER_SCREEN_Y + (Uint32) (JoystickY + 32767) * (INNER_SCREEN_H - 4) / 65536,
+			.x = INNER_SCREEN_X + (Uint32) ((Sint32) JoystickX + 32768) * (INNER_SCREEN_W - 4) / 65536,
+			.y = GCW_ZERO_PIC_Y + INNER_SCREEN_Y + (Uint32) ((Sint32) JoystickY + 32768) * (INNER_SCREEN_H - 4) / 65536,
 			.w = 4,
 			.h = 4
 		};
